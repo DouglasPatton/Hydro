@@ -31,7 +31,7 @@ class Hydrositedata(Hydrosite):
         self.extractfromxml()
         self.timematchcheck()
         self.timestepcheck()
-       # self.tonumpy()
+        self.tonumpy()
         
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
@@ -60,11 +60,15 @@ class Hydrositedata(Hydrosite):
     def tonumpy(self):
         if self.allmatch==1:
             n=len(self.matchlog)
-            k=len(self.matchlog[0]+1)
-            self.data_array=np.empty([n,k])
-            print(self.data_array.shape)
-            for i in len(self.matchlog):
-                self.data_array[i,:]=1
+            k=len(self.matchlog[0])+2 #+1 for time column, +1 more since matchlog is nx1 for 2 series
+            print(n,k)
+            self.data_array=np.ones([n,k])
+            startdate=datetime.datetime.strptime(self.extracted[0][0][0],self.t_format)
+            for i in range(n):
+                timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
+                self.data_array[i,0]=timediffs.seconds/60/60 #convert to hours
+                for j in range(k-1): #k-1 because time is set
+                    self.data_array[i,j+1]=float(self.extracted[j][i][1])
         else: import sys;sys.exit("error from allmatch==0")        
     
     def timestepcheck(self):
@@ -74,14 +78,14 @@ class Hydrositedata(Hydrosite):
         todo: handle allmatch==0
         """
         self.allstepseven=0
-        t_format='%Y-%m-%dT%H:%M:%S%z'
+        self.t_format='%Y-%m-%dT%H:%M:%S%z'
         stepcount=len(self.matchlog)-1 #minus 1 because it is a difference
         timestep=[[0] for _ in range(stepcount)]
         if self.allmatch==1:
             for i in range(stepcount):
-                timestep[i]=datetime.datetime.strptime(self.extracted[0][i+1][0],t_format)
+                timestep[i]=datetime.datetime.strptime(self.extracted[0][i+1][0],self.t_format)
             for i in range(stepcount):
-                timestep[i]-=datetime.datetime.strptime(self.extracted[0][i][0],t_format)
+                timestep[i]-=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)
             self.timestep=timestep
             self.allstepseven=all([j==timestep[0] for j in timestep])
         else: import sys;sys.exit("error from allmatch==0")
