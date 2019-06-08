@@ -68,7 +68,12 @@ class Hydrositedata(Hydrosite):
                 timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
                 self.data_array[i,0]=timediffs.seconds/60/60 #convert to hours
                 for j in range(k-1): #k-1 because time is set
-                    self.data_array[i,j+1]=float(self.extracted[j][i][1])
+                    try: self.data_array[i,j+1]=float(self.extracted[j][i][1])
+                    except:self.data_array[i,j+1]=np.nan
+                
+                    
+                    
+                    
         else: import sys;sys.exit("error from allmatch==0")        
     
     def timestepcheck(self):
