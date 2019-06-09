@@ -6,6 +6,10 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import datetime
 
+from bokeh.io import push_notebook, show, output_notebook; 
+from bokeh.plotting import figure; 
+output_notebook()
+
 class Hydrosite():
     '''make parent class hydrosite, child will be hydrositedata, and grandchild is hydrositedatamodel. '''
     def __init__(self, site):
@@ -64,17 +68,27 @@ class Hydrositedata(Hydrosite):
             print(n,k)
             self.data_array=np.ones([n,k])
             startdate=datetime.datetime.strptime(self.extracted[0][0][0],self.t_format)
+            startyear=startdate.year
             for i in range(n):
                 timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
-                self.data_array[i,0]=timediffs.seconds/60/60 #convert to hours
+                self.data_array[i,0]=timediffs.days*24+timediffs.seconds/60/60 #convert to hours
                 for j in range(k-1): #k-1 because time is set
                     try: self.data_array[i,j+1]=float(self.extracted[j][i][1])
                     except:self.data_array[i,j+1]=np.nan
-                
-                    
-                    
-                    
         else: import sys;sys.exit("error from allmatch==0")        
+    
+    def simpleplot(self):
+        gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
+        time=self.data_array[:,0]
+        precip=self.data_array[:,1]
+        p=figure(title='rainfall and gageheight over time', plot_width=900, plot_height=500)
+        p.xaxis.axis_label = 'time'
+        p.scatter(time,precip,size=precip/np.amax(precip)*7+2,color='red',alpha=0.6,legend='precipitation')
+        p.line(time,precip,color='red',alpha=0.6,legend='precipitation')
+        p.scatter(time,gageht,size=2,color='blue',legend='gage height')
+        p.line(time,gageht,color='blue',legend='gage height')
+        p.legend.location = "top_left"
+        show(p)
     
     def timestepcheck(self):
         """if the number of time periods is T then create attribute self.timestep, a list of T-1 time steps
@@ -93,7 +107,9 @@ class Hydrositedata(Hydrosite):
                 timestep[i]-=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)
             self.timestep=timestep
             self.allstepseven=all([j==timestep[0] for j in timestep])
-        else: import sys;sys.exit("error from allmatch==0")
+        else:sys.exit("error from allmatch==0")
+        if self.allstepseven==1: print('all time steps are evenly spaced')
+        else: print('not all time steps are evenly spaced')
     
     def timematchcheck(self):
         """create an attribute self.matchlog that contains a column
@@ -114,7 +130,10 @@ class Hydrositedata(Hydrosite):
                 else: 
                     matchlog[i][j]=0 #this will force the match value to zero if any times don't match.
                     self.allmatch=0
+                    print('not all series have matching times from start to end.')
+                    print('view attribute *.matchlog to see discrepancies from first series')
         self.matchlog=matchlog
+        if self.allmatch==1: print('all series have matching times from start to end')
         
             
     
