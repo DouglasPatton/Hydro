@@ -71,7 +71,7 @@ class Hydrositedata(Hydrosite):
             startyear=startdate.year
             for i in range(n):
                 timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
-                self.data_array[i,0]=timediffs.days*24+timediffs.seconds/60/60 #convert to hours
+                self.data_array[i,0]=timediffs.days+timediffs.seconds/60/60/24 #convert to days
                 for j in range(k-1): #k-1 because time is set
                     try: self.data_array[i,j+1]=float(self.extracted[j][i][1])
                     except:self.data_array[i,j+1]=np.nan
@@ -82,12 +82,13 @@ class Hydrositedata(Hydrosite):
         time=self.data_array[:,0]
         precip=self.data_array[:,1]
         p=figure(title='rainfall and gageheight over time', plot_width=900, plot_height=500)
-        p.xaxis.axis_label = 'time'
+        p.xaxis.axis_label = 'time(days)'
         p.scatter(time,precip,size=precip/np.amax(precip)*7+2,color='red',alpha=0.6,legend='precipitation')
         p.line(time,precip,color='red',alpha=0.6,legend='precipitation')
         p.scatter(time,gageht,size=2,color='blue',legend='gage height')
         p.line(time,gageht,color='blue',legend='gage height')
         p.legend.location = "top_left"
+        p.yaxis.visible=False
         show(p)
     
     def timestepcheck(self):
