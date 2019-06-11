@@ -5,8 +5,13 @@ import os
 import xml.etree.ElementTree as ET
 import numpy as np
 import datetime
+import geopandas as gpd
+import pandas as pd
+import matplotlib as plt
+from shapely.geometry import Point,Polygon
+import descartes
 
-from bokeh.io import push_notebook, show, output_notebook; 
+from bokeh.io import show, output_notebook; 
 from bokeh.plotting import figure; 
 output_notebook()
 
@@ -37,6 +42,59 @@ class Hydrositedata(Hydrosite):
         self.timestepcheck()
         self.tonumpy()
         
+    def extractfromxml(self):
+        """Take the time and values for each series from the xml to python lists with
+        observations matched by time or else omitted from the new list. creates a new attribute
+        called self.extracted with a column for each series and each row contains a (time,value) tuple.
+        Create Attributes:
+        self.extracted contains a list of series and each series is a list of
+        (time, value) tuples 
+        self.datatracker a list of the length of each list of series
+        self.obs_idlist contains basic meta-data for each series downloaded
+        self.latlon contains a list of strings with latitude and longitude for each series
+        """
+        """Note: xmllint --format file.xml in the linux terminal is used to view the structure of a 
+        downloaded xml document
+        """
+        namespace={'ns0':"http://www.opengis.net/waterml/2.0",
+           'ns1':"http://www.opengis.net/gml/3.2",
+           'ns3':"http://www.w3.org/1999/xlink",
+           'ns4':"http://www.opengis.net/om/2.0",
+           'ns5':"http://www.opengis.net/sampling/2.0" ,
+           'ns6':"http://www.opengis.net/samplingSpatial/2.0",
+           'ns7':"http://www.opengis.net/swe/2.0"} 
+        #add feature: automatically make the namespace dictionary automatic by pulling from begining of xml file
+        extracted=[];j=-1;tracker=[];obs_idlist=[]; latlon=[]; sitemetadata=[]
+        for elem in self.root.findall('ns0:observationMember',namespace):
+            obs_idlist.append(elem.find('ns4:OM_Observation',namespace).attrib)
+            for elem2 in elem.findall('ns4:OM_Observation',namespace):
+                tracker.append(0)#initialize the next series
+                extracted.append([])
+                j+=1#j is indexing each series
+                elem3=elem2.find('ns4:featureOfInterest',namespace)
+                sitemetadata.append(elem3.attrib)
+                latlon.append(
+                    elem3.find('ns0:MonitoringPoint',namespace)
+                    .find('ns6:shape',namespace)
+                    .find('ns1:Point',namespace)
+                    .find('ns1:pos',namespace).text
+                    )
+                for elem3 in elem2.findall('ns4:result',namespace):
+                    for elem4 in elem3.findall('ns0:MeasurementTimeseries',namespace):
+                        for elem5 in elem4.findall('ns0:point',namespace):
+                            for elem6 in elem5.findall('ns0:MeasurementTVP',namespace):
+                                time=elem6.find('ns0:time',namespace)
+                                val=elem6.find('ns0:value',namespace)
+                                extracted[j].append((time.text,val.text))
+                                tracker[j]+=1
+        self.sitemetadata=sitemetadata
+        self.latlon=latlon
+        self.extracted=extracted
+        self.datatracker=tracker #a list of counts of observations for each time,value pair
+        self.obs_idlist=obs_idlist
+        
+                
+        
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
         create self.datapath to check if data from self.requesturl has already been downloaded
@@ -60,22 +118,6 @@ class Hydrositedata(Hydrosite):
             savefile=open(self.datapath,'w')
             savefile.write(ET.tostring(self.root).decode("utf-8"))
             savefile.close()
-         
-    def tonumpy(self):
-        if self.allmatch==1:
-            n=len(self.matchlog)
-            k=len(self.matchlog[0])+2 #+1 for time column, +1 more since matchlog is nx1 for 2 series
-            print(n,k)
-            self.data_array=np.ones([n,k])
-            startdate=datetime.datetime.strptime(self.extracted[0][0][0],self.t_format)
-            startyear=startdate.year
-            for i in range(n):
-                timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
-                self.data_array[i,0]=timediffs.days+timediffs.seconds/60/60/24 #convert to days
-                for j in range(k-1): #k-1 because time is set
-                    try: self.data_array[i,j+1]=float(self.extracted[j][i][1])
-                    except:self.data_array[i,j+1]=np.nan
-        else: import sys;sys.exit("error from allmatch==0")        
     
     def simpleplot(self):
         gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
@@ -137,60 +179,30 @@ class Hydrositedata(Hydrosite):
         if self.allmatch==1: print('all series have matching times from start to end')
         
             
-    
+             
+    def tonumpy(self):
+        """create self.data_array a numpy array with an observation on each row containing a time
+        column measuring days since the first obseration followed by each series
+        """
+        if self.allmatch==1:
+            n=len(self.matchlog)
+            k=len(self.matchlog[0])+2 #+1 for time column, +1 more since matchlog is nx1 for 2 series
+            print(n,k)
+            self.data_array=np.ones([n,k])
+            startdate=datetime.datetime.strptime(self.extracted[0][0][0],self.t_format)
+            startyear=startdate.year
+            for i in range(n):
+                timediffs=datetime.datetime.strptime(self.extracted[0][i][0],self.t_format)-startdate
+                self.data_array[i,0]=timediffs.days+timediffs.seconds/60/60/24 #convert to days
+                for j in range(k-1): #k-1 because time is set
+                    try: self.data_array[i,j+1]=float(self.extracted[j][i][1])
+                    except:self.data_array[i,j+1]=np.nan
+        else: import sys;sys.exit("error from allmatch==0")        
+
         
     
 
-    def extractfromxml(self):
-        """Take the time and values for each series from the xml to python lists with
-        observations matched by time or else omitted from the new list. creates a new attribute
-        called self.extracted with a column for each series and each row contains a (time,value) tuple.
-        Create Attributes:
-        self.extracted contains a list of series and each series is a list of
-        (time, value) tuples 
-        self.datatracker a list of the length of each list of series
-        self.obs_idlist contains basic meta-data for each series downloaded
-        self.latlon contains a list of strings with latitude and longitude for each series
-        """
-        """Note: xmllint --format file.xml in the linux terminal is used to view the structure of a 
-        downloaded xml document
-        """
-        namespace={'ns0':"http://www.opengis.net/waterml/2.0",
-           'ns1':"http://www.opengis.net/gml/3.2",
-           'ns3':"http://www.w3.org/1999/xlink",
-           'ns4':"http://www.opengis.net/om/2.0",
-           'ns5':"http://www.opengis.net/sampling/2.0" ,
-           'ns6':"http://www.opengis.net/samplingSpatial/2.0",
-           'ns7':"http://www.opengis.net/swe/2.0"} 
-        #add feature: automatically make the namespace dictionary automatic by pulling from begining of xml file
-        extracted=[];j=-1;tracker=[];obs_idlist=[]; self.latlon=[]
-        for elem in self.root.findall('ns0:observationMember',namespace):
-            obs_idlist.append(elem.find('ns4:OM_Observation',namespace).attrib)
-            for elem2 in elem.findall('ns4:OM_Observation',namespace):
-                tracker.append(0)#initialize the next series
-                extracted.append([])
-                j+=1#j is indexing each series
-                elem3=elem2.find('ns4:featureOfInterest',namespace)
-                self.sitemetadata=elem3.attrib
-                self.latlon.append(
-                    elem3.find('ns0:MonitoringPoint',namespace)
-                    .find('ns6:shape',namespace)
-                    .find('ns1:Point',namespace)
-                    .find('ns1:pos',namespace).text
-                    )
-                for elem3 in elem2.findall('ns4:result',namespace):
-                    for elem4 in elem3.findall('ns0:MeasurementTimeseries',namespace):
-                        for elem5 in elem4.findall('ns0:point',namespace):
-                            for elem6 in elem5.findall('ns0:MeasurementTVP',namespace):
-                                time=elem6.find('ns0:time',namespace)
-                                val=elem6.find('ns0:value',namespace)
-                                extracted[j].append((time.text,val.text))
-                                tracker[j]+=1
-        self.extracted=extracted
-        self.datatracker=tracker #a list of counts of observations for each time,value pair
-        self.obs_idlist=obs_idlist
-        
-        
+    
 
 class Hydrositedatamodel(Hydrositedata):
     '''makes grandchild of hydrosite,child of hydrositedata'''
