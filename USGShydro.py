@@ -29,18 +29,22 @@ class Hydrositedata(Hydrosite):
     '''make child of Hydrosite that has its own child Hydrositedatamodel.
     Create attributes self.start and self.end the start and times.
     Create attribute self.paramlist, the list of requested time series
-    Run method self.get_data, then self.extractfromxml, then self.timematchcheck    
+    Run method self.get_data, then self.extractfromxml, then self.timematchcheck 
+    methods not called at runtime
+    simpleplot() create a simple plot of rainfall vs runoff
+    geoplot() plots the point and the drainage basin
     '''
     def __init__(self, site, start, end, paramlist):
         super().__init__(site)
-        self.start=start
-        self.end=end
+        self.start='startDT='+start
+        self.end='endDT='+end
         self.paramlist=paramlist
         self.get_data()
         self.extractfromxml()
         self.timematchcheck()
         self.timestepcheck()
         self.tonumpy()
+        
         
     def extractfromxml(self):
         """Take the time and values for each series from the xml to python lists with
@@ -72,7 +76,7 @@ class Hydrositedata(Hydrosite):
                 extracted.append([])
                 j+=1#j is indexing each series
                 elem3=elem2.find('ns4:featureOfInterest',namespace)
-                sitemetadata.append(elem3.attrib)
+                sitemetadata.append(elem3.attrib['{http://www.w3.org/1999/xlink}title'])
                 latlon.append(
                     elem3.find('ns0:MonitoringPoint',namespace)
                     .find('ns6:shape',namespace)
@@ -93,7 +97,11 @@ class Hydrositedata(Hydrosite):
         self.datatracker=tracker #a list of counts of observations for each time,value pair
         self.obs_idlist=obs_idlist
         
-                
+    def geoplot(self):
+        """creates a plot of the site location on a map with the drainage basin and NLCD landcover
+        """
+        j=len(self.latlon)
+        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.sitemetadata[j]] for j in range(j)],columns=["longitude","latitude","site_name"])
         
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
