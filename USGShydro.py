@@ -13,12 +13,13 @@ import descartes
 
 from bokeh.io import show, output_notebook; 
 from bokeh.plotting import figure; 
+from bokeh.models import ColumnDataSource
 output_notebook()
 
 class Hydrosite():
     '''make parent class hydrosite, child will be hydrositedata, and grandchild is hydrositedatamodel. '''
     def __init__(self, site):
-        self.site=site
+        self.site='sites='+site
         self.sitecode=site[-8:]
         self.sitedirectory='data/usgs-huc8-'+self.sitecode 
         if not os.path.exists(self.sitedirectory):
@@ -68,7 +69,7 @@ class Hydrositedata(Hydrosite):
            'ns6':"http://www.opengis.net/samplingSpatial/2.0",
            'ns7':"http://www.opengis.net/swe/2.0"} 
         #add feature: automatically make the namespace dictionary automatic by pulling from begining of xml file
-        extracted=[];j=-1;tracker=[];obs_idlist=[]; latlon=[]; sitemetadata=[]
+        extracted=[];j=-1;tracker=[];obs_idlist=[]; latlon=[];latlon_crs=[]; sitemetadata=[]
         for elem in self.root.findall('ns0:observationMember',namespace):
             obs_idlist.append(elem.find('ns4:OM_Observation',namespace).attrib)
             for elem2 in elem.findall('ns4:OM_Observation',namespace):
@@ -77,12 +78,12 @@ class Hydrositedata(Hydrosite):
                 j+=1#j is indexing each series
                 elem3=elem2.find('ns4:featureOfInterest',namespace)
                 sitemetadata.append(elem3.attrib['{http://www.w3.org/1999/xlink}title'])
-                latlon.append(
-                    elem3.find('ns0:MonitoringPoint',namespace)
-                    .find('ns6:shape',namespace)
-                    .find('ns1:Point',namespace)
-                    .find('ns1:pos',namespace).text
-                    )
+                elem_latlon=elem3.find('ns0:MonitoringPoint',namespace)\
+                    .find('ns6:shape',namespace)\
+                    .find('ns1:Point',namespace)\
+                    .find('ns1:pos',namespace)
+                latlon.append(elem_latlon.text)
+                latlon_crs.append(elem_latlon.attrib['srsName'][-9:])
                 for elem3 in elem2.findall('ns4:result',namespace):
                     for elem4 in elem3.findall('ns0:MeasurementTimeseries',namespace):
                         for elem5 in elem4.findall('ns0:point',namespace):
@@ -93,15 +94,18 @@ class Hydrositedata(Hydrosite):
                                 tracker[j]+=1
         self.sitemetadata=sitemetadata
         self.latlon=latlon
+        self.latlon_crs=latlon_crs
         self.extracted=extracted
         self.datatracker=tracker #a list of counts of observations for each time,value pair
         self.obs_idlist=obs_idlist
         
     def geoplot(self):
-        """creates a plot of the site location on a map with the drainage basin and NLCD landcover
+        """creates a plot of the site location on a map with the drainage basin and eventually NLCD landcover
         """
         j=len(self.latlon)
-        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.sitemetadata[j]] for j in range(j)],columns=["longitude","latitude","site_name"])
+        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(j)],columns=["longitude","latitude","CRS","site_name"])
+        
+        
         
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
@@ -195,7 +199,7 @@ class Hydrositedata(Hydrosite):
         if self.allmatch==1:
             n=len(self.matchlog)
             k=len(self.matchlog[0])+2 #+1 for time column, +1 more since matchlog is nx1 for 2 series
-            print(n,k)
+            print('The request has returned {} observations for {} series'.format(n,k-1))
             self.data_array=np.ones([n,k])
             startdate=datetime.datetime.strptime(self.extracted[0][0][0],self.t_format)
             startyear=startdate.year
