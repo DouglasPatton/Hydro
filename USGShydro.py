@@ -223,6 +223,7 @@ class Hydrositedatamodel(Hydrositedata):
     def __init__(self, site, start, end, paramlist, modelfeatures):
         super().__init__(site,start,end,paramlist)
         self.modelfeatures=modelfeatures
+        self.model=RR.RRtimeseries(self.data_array, modelfeatures)
 
         
     
