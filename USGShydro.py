@@ -104,7 +104,7 @@ class Hydrositedata(Hydrosite):
         """
         j=len(self.latlon)
         self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(j)],columns=["longitude","latitude","CRS","site_name"])
-        
+        #wmsurl=https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?request=GetCapabilities&service=WMS
         
         
     def get_data(self):
@@ -217,10 +217,13 @@ class Hydrositedata(Hydrosite):
     
 
 class Hydrositedatamodel(Hydrositedata):
-    '''makes grandchild of hydrosite,child of hydrositedata'''
+    '''makes subclass of hydrosite,subclass of hydrositedata
+    '''
     def __init__(self, site, start, end, paramlist, modelfeatures):
         super().__init__(site,start,end,paramlist)
         self.modelfeatures=modelfeatures
+
+        
         
 
 

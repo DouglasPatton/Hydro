@@ -9,3 +9,5 @@ class RRtimeseries()
         self.maxlag=maxlag
         
         
+    def lagmaker(self):    
+        
