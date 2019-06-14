@@ -133,6 +133,8 @@ class Hydrositedata(Hydrosite):
             savefile.close()
     
     def simpleplot(self):
+        """create a pre-determined plot of rainfall vs runoff. primarily for testing purposes.
+        """
         gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
         time=self.data_array[:,0]
         precip=self.data_array[:,1]
@@ -223,7 +225,10 @@ class Hydrositedatamodel(Hydrositedata):
     def __init__(self, site, start, end, paramlist, modelfeatures):
         super().__init__(site,start,end,paramlist)
         self.modelfeatures=modelfeatures
-        self.model=RR.RRtimeseries(self.data_array, modelfeatures)
+        
+    def runTSmodel1(self,modelfeatures=None):
+        if modelfeatures==None:modelfeatures=self.modelfeatures
+        self.model=RR.RRtimeseries(self.data_array,modelfeatures)
 
         
     
