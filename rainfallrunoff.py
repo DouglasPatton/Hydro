@@ -1,5 +1,6 @@
 
 import numpy as np
+import tstools as tst
 from scipy.optimize import minimize
 
 class RRtimeseries():
@@ -16,25 +17,28 @@ class RRtimeseries():
         else: print('other')
         
     def distlagmodel(self):
-        self.lagprecip=self.lagmaker(self.data[:,1],self.maxlag,self.startlag)
-        if self.modelfeatures['AR1']=='yes':
-            self.lagn=np.shape(self.lagprecip)[0]
+        
+        self.lagprecip=tst.lagmaker(self.data[:,1],self.maxlag,self.startlag)
+        self.lagn=np.shape(self.lagprecip)[0]
+        
+        if self.modelfeatures['incl_AR1']=='yes':
             runlag1=self.data[(self.maxlag-1):(self.n-1),0][:,None]
-            print('***',runlag1.shape,self.lagprecip.shape)
-            X=np.concatenate((runlag1,self.lagprecip),axis=1)
-            print(np.shape(X))
-            #return minimize(lagmodelMSE,wt_try0,args=(runY,rainX),method='Nelder-Mead')
+            x=np.concatenate((runlag1,self.lagprecip),axis=1)
         
-    def lagmodelMSE(Betas,Y,X):
-        pass
+        if self.modelfeatures['incl_constant']=='yes':
+            x=np.concatenate((np.ones([self.lagn,1]),x),axis=1)
+        
+        betastart=np.ones(np.shape(x)[1])
+        return minimize(lagmodelMSE,betastart,args=(runY,rainX),method='BFGS')
+        
+    def lagmodelMSE(betas,y,x):
+        return np.sum((y-x.T@betas)**2)/np.shape(y)[0]
+    
+    
     
     
         
-    def lagmaker(self,tseries,maxlag,startlag):  
-        lagtseries=np.empty([self.n+maxlag-startlag,maxlag-startlag+1]) #+1 b/c 0...maxlag
-        for i in range(maxlag-startlag+1):
-            lagtseries[(i+startlag):self.n+i+startlag,i]=tseries
-        return lagtseries[maxlag:self.n,:]
+    
         
         
         
