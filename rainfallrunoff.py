@@ -14,8 +14,8 @@ class RRtimeseries():
                 self.maxlag=modelfeatures['maxlag']
                 self.startlag=modelfeatures['startlag']
                 self.distlagmodel()
-                print('betas:',np.exp(self.modeloutput.x))
-                print('MSE:',self.modeloutput.fun)
+                #print('betas:',np.exp(self.modeloutput.x))
+                #print('MSE:',self.modeloutput.fun)
         else: print('other')
         
     def distlagmodel(self):
@@ -23,7 +23,7 @@ class RRtimeseries():
         self.lagn=np.shape(self.lagprecip)[0]
         
         if self.modelfeatures['incl_AR1']=='yes':
-            runlag1=self.data[(self.maxlag-1):(self.n-1),0][:,None]
+            runlag1=self.data[(self.maxlag-1):(self.n-1),2][:,None]
             x=np.concatenate((runlag1,self.lagprecip),axis=1)
         else:x=self.lagprecip
         if self.modelfeatures['incl_constant']=='yes':

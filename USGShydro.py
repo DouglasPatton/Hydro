@@ -152,8 +152,10 @@ class Hydrositedata(Hydrosite):
     def predictplot(self):
         """create a pre-determined plot of rainfall vs runoff. primarily for testing purposes.
         """
-        predict=self.model.modelpredict
+        
         gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
+        predict=self.model.modelpredict-np.amin(self.data_array[:,2])
+        
         time=self.data_array[:,0]
         precip=self.data_array[:,1]
         p=figure(title='rainfall and gageheight over time', plot_width=900, plot_height=500)
@@ -163,7 +165,7 @@ class Hydrositedata(Hydrosite):
         p.scatter(time,gageht,size=2,color='green',legend='gage height')
         p.line(time,gageht,color='green',legend='gage height')
         p.scatter(time[-np.shape(predict)[0]:],predict,size=2,color='red',alpha=0.6,legend='predicted gage ht')
-        p.line(time,precip,color='red',alpha=0.6,legend='predicted gage ht')
+        p.line(time[-np.shape(predict)[0]:],predict,color='red',alpha=0.6,legend='predicted gage ht')
         p.legend.location = "top_left"
         p.yaxis.visible=False
         show(p)
