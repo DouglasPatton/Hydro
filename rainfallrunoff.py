@@ -13,7 +13,7 @@ class RRtimeseries():
             if modelfeatures['local']=='no':
                 self.maxlag=modelfeatures['maxlag']
                 self.startlag=modelfeatures['startlag']
-                self.modeloutput=self.distlagmodel()
+                self.distlagmodel()
                 print('betas:',np.exp(self.modeloutput.x))
                 print('MSE:',self.modeloutput.fun)
         else: print('other')
@@ -30,11 +30,13 @@ class RRtimeseries():
             x=np.concatenate((np.ones([self.lagn,1]),x),axis=1)
         
         betastart=np.ones(np.shape(x)[1])
-        return minimize(self.lagmodelMSE,betastart,args=(self.data[self.maxlag:,2],x),method='BFGS')
+        self.modeloutput=minimize(self.lagmodelMSE,betastart,args=(self.data[self.maxlag:,2],x),method='BFGS')
+        self.modelpredict=x@np.exp(self.modeloutput.x)
+        
         
     def lagmodelMSE(self,betas,y,x):
         return np.sum((y-x@np.exp(betas))**2)/np.shape(y)[0]
-
+    
     
     
     

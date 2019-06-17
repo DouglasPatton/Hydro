@@ -49,7 +49,7 @@ class Hydrositedata(Hydrosite):
         
         
     def extractfromxml(self):
-        """Take the time and values for each series from the xml to python lists with
+        """Take the time and values for each series from  xml to python lists with
         observations matched by time or else omitted from the new list. creates a new attribute
         called self.extracted with a column for each series and each row contains a (time,value) tuple.
         Create Attributes:
@@ -135,18 +135,39 @@ class Hydrositedata(Hydrosite):
     def simpleplot(self):
         """create a pre-determined plot of rainfall vs runoff. primarily for testing purposes.
         """
+        
         gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
         time=self.data_array[:,0]
         precip=self.data_array[:,1]
         p=figure(title='rainfall and gageheight over time', plot_width=900, plot_height=500)
         p.xaxis.axis_label = 'time(days)'
-        p.scatter(time,precip,size=precip/np.amax(precip)*7+2,color='red',alpha=0.6,legend='precipitation')
-        p.line(time,precip,color='red',alpha=0.6,legend='precipitation')
-        p.scatter(time,gageht,size=2,color='blue',legend='gage height')
-        p.line(time,gageht,color='blue',legend='gage height')
+        p.scatter(time,precip,size=precip/np.amax(precip)*7+2,color='blue',alpha=0.6,legend='precipitation')
+        p.line(time,precip,color='blue',alpha=0.6,legend='precipitation')
+        p.scatter(time,gageht,size=2,color='green',legend='gage height')
+        p.line(time,gageht,color='green',legend='gage height')
         p.legend.location = "top_left"
         p.yaxis.visible=False
         show(p)
+        
+    def predictplot(self):
+        """create a pre-determined plot of rainfall vs runoff. primarily for testing purposes.
+        """
+        predict=self.model.modelpredict
+        gageht=self.data_array[:,2]-np.amin(self.data_array[:,2])
+        time=self.data_array[:,0]
+        precip=self.data_array[:,1]
+        p=figure(title='rainfall and gageheight over time', plot_width=900, plot_height=500)
+        p.xaxis.axis_label = 'time(days)'
+        p.scatter(time,precip,size=precip/np.amax(precip)*7+2,color='blue',alpha=0.6,legend='precipitation')
+        p.line(time,precip,color='blue',alpha=0.6,legend='precipitation')
+        p.scatter(time,gageht,size=2,color='green',legend='gage height')
+        p.line(time,gageht,color='green',legend='gage height')
+        p.scatter(time[-np.shape(predict)[0]:],predict,size=2,color='red',alpha=0.6,legend='predicted gage ht')
+        p.line(time,precip,color='red',alpha=0.6,legend='predicted gage ht')
+        p.legend.location = "top_left"
+        p.yaxis.visible=False
+        show(p)
+        
     
     def timestepcheck(self):
         """if the number of time periods is T then create attribute self.timestep, a list of T-1 time steps
@@ -229,6 +250,7 @@ class Hydrositedatamodel(Hydrositedata):
     def runTSmodel1(self,modelfeatures=None):
         if modelfeatures==None:modelfeatures=self.modelfeatures
         self.model=RR.RRtimeseries(self.data_array,modelfeatures)
+  
 
         
     
