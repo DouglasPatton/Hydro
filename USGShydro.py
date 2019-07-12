@@ -101,12 +101,36 @@ class Hydrositedata(Hydrosite):
         self.obs_idlist=obs_idlist
         
     def geoplot(self):
-        """creates a plot of the site location on a map with the drainage basin and eventually NLCD landcover
+        """creates a plot of the site location on a map
+        then add  huc8 drainage basin 
+        then add  eventually NLCD landcover
         """
-        j=len(self.latlon)
-        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(j)],columns=["longitude","latitude","CRS","site_name"])
-        #wmsurl=https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?request=GetCapabilities&service=WMS
+        #add feature to check if multiple CRS conflict
+                
+        l=len(self.latlon)
+        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(l)],columns=["longitude","latitude","CRS","site_name"])
         
+        #find max and min lat and lon and plan data request.
+        #help from/thanks to: https://github.com/bokeh/bokeh/issues/7825
+        [self.latlon[j][1],self.latlong[j][0]) for j in l]
+        
+        '''https://basemap.nationalmap.gov/arcgis/services/'
+       'USGSTopo/MapServer/WMSServer?service=WMS&'
+       'request=GetMap&version=1.3.0&BGCOLOR=0xFFFFFF&&format=image/png&'
+       'crs={crs}&layers={layer}&width={width}&height={height}')
+         url.format(crs=crs, width=width, height=height, layer=layer) + \
+          '&bbox={XMIN},{YMIN},{XMAX},{YMAX}'''
+        
+        basewmsurl=('https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?service=WMS&'
+                    'request=GetMap&version=1.3.0&BGCOLOR=0xFFFFFF&&format=image/png&')
+        crs='&crs={crs}'.format(crs=self.latlon_crs[0])
+        layers='1'
+        width='&width={width}'.format(width=)
+        height='&height={height}'.format()
+        bbox='&bbox={xmin},{ymin},{xmax},{ymax}'.format()
+        wmsurl=baseurl+crs+layers+width+height+bbox
+       # 'https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?request'
+                '=GetCapabilities&service=WMS
         
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
