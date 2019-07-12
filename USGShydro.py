@@ -107,12 +107,37 @@ class Hydrositedata(Hydrosite):
         """
         #add feature to check if multiple CRS conflict
                 
-        l=len(self.latlon)
-        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(l)],columns=["longitude","latitude","CRS","site_name"])
+        sites=len(self.latlon)
+        print(len(self.latlon))
+        
+        self.df=pd.DataFrame([[self.latlon[j][-11:],self.latlon[j][:11],self.latlon_crs[j],self.sitemetadata[j]] for j in range(sites)],columns=["longitude","latitude","CRS","site_name"])
         
         #find max and min lat and lon and plan data request.
         #help from/thanks to: https://github.com/bokeh/bokeh/issues/7825
-        [self.latlon[j][1],self.latlong[j][0]) for j in l]
+        print(sites)
+        latlist=[float(self.latlon[j][:11]) for j in range(sites)]
+        lonlist=[float(self.latlon[j][-11:]) for j in range(sites)]
+        latarray=np.asarray(latlist)
+        lonarray=np.asarray(lonlist)
+        
+        latmin=np.amin(latarray)
+        latmax=np.amax(latarray)
+        lonmin=np.amin(lonarray)
+        lonmax=np.amax(lonarray)
+        
+        latrange=latmax-latmin
+        if latrange==0: latrange=1
+        lonrange=lonmax=lonmin
+        if lonrange==0: lonrange=1
+        
+        xmin=lonmin-lonrange**.5
+        xmax=lonmax+lonrange**.5
+        ymin=latmin-latrange**.5
+        ymax=latmax+latrange**.5
+    
+        
+        
+        
         
         '''https://basemap.nationalmap.gov/arcgis/services/'
        'USGSTopo/MapServer/WMSServer?service=WMS&'
@@ -125,12 +150,11 @@ class Hydrositedata(Hydrosite):
                     'request=GetMap&version=1.3.0&BGCOLOR=0xFFFFFF&&format=image/png&')
         crs='&crs={crs}'.format(crs=self.latlon_crs[0])
         layers='1'
-        width='&width={width}'.format(width=)
-        height='&height={height}'.format()
-        bbox='&bbox={xmin},{ymin},{xmax},{ymax}'.format()
-        wmsurl=baseurl+crs+layers+width+height+bbox
-       # 'https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?request'
-                '=GetCapabilities&service=WMS
+        width='&width={width}'.format(width=640)
+        height='&height={height}'.format(height=480)
+        bbox='&bbox={xmin},{ymin},{xmax},{ymax}'.format(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax)
+        self.wmsurl=baseurl+crs+layers+width+height+bbox
+       # 'https://smallscale.nationalmap.gov/arcgis/services/LandCover/MapServer/WMSServer?request=GetCapabilities&service=WMS
         
     def get_data(self):
         """create self.requesturl, a url based on site# and parameters.
