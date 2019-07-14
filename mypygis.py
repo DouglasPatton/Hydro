@@ -2,7 +2,7 @@ from shapely.geometry import Point,Polygon
 import descartes
 import geopandas as gpd
 import pandas as pd
-
+import os
 import numpy as np
 
 from bokeh.io import show, output_notebook,curdoc,save, output_file
@@ -18,6 +18,19 @@ class Sitehucmap():
         self.latlon_crs=latlon_crs
         self.sitemetadata=sitemetadata
         self.makemap1()
+        
+    def extracthuc8(self):
+        self.datapath=os.path.join(self.sitedirectory,urlsuffix+'.xml')#put these details in a companion file and simplify file name
+        if os.path.exists(self.datapath):
+            self.data=ET.parse(self.datapath) #add try clause?
+            self.root=self.data.getroot() 
+        else:    
+            response=urlopen(Request(self.requesturl,headers={"Accept-Encoding": "gzip"})) 
+            self.data=gzip.open(response, 'rb').read()
+            self.root=ET.fromstring(self.data)
+            savefile=open(self.datapath,'w')
+            savefile.write(ET.tostring(self.root).decode("utf-8"))
+            savefile.close()
         
     def makemap1(self):    
         seriescount=len(self.latlon)
