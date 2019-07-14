@@ -16,10 +16,10 @@ import matplotlib.pyplot as plt
 #the above line must be included and commented out
 
 
-from bokeh.io import show, output_notebook,curdoc,save, output_file
+from bokeh.io import show, output_notebook#,curdoc,save, output_file
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, Range1d, BBoxTileSource
-from bokeh.layouts import row
+#from bokeh.models import ColumnDataSource, Range1d, BBoxTileSource
+#from bokeh.layouts import row
 output_notebook()
 #output_file("map1.html",'bokeh maps of usgs sites')
 
